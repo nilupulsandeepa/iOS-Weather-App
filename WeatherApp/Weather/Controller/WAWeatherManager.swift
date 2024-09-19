@@ -16,7 +16,7 @@ public class WAWeatherManager: NSObject {
     private var g_CurrentLongitude: Float = .infinity
     
     //---- OpenWeather API
-    private let g_APIKey: String = "e6227db810e4e8e2b45cd91c0b55f279"
+    private let g_APIKey: String = ""
     private let g_APIURLFormat: String = "https://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&appid=%@&units=metric"
     
     public var delegate: WAWeatherManagerDelegate?
