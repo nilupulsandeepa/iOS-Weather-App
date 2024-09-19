@@ -10,7 +10,9 @@ import UIKit
 public class WAMainViewController: UIViewController {
     
     //----  MARK: Properties
-    private var g_AppState: WAAppState = .none
+    private var g_CurrentLocationPermission: WALocationPermissionState = .denied
+    private var g_CurrentNetworkState: WANetworkState = .unavailable
+    private var g_CurrentAppState: WAAppState = .none
     
     public override func viewDidLoad() {
         WALocationManager.shared.delegate = self
@@ -61,23 +63,20 @@ public class WAMainViewController: UIViewController {
     //---- Location Methods
     private func updateCurrentLocation(location: WALocation) {
         g_LoadingProgressDescriptionView.text = "Fetching weather..."
-        g_AppState = .weatherUpdating
         WAWeatherManager.shared.updateCurrentLocation(latitude: Float(location.getLatitude().magnitude), longitude: Float(location.getLongitude().magnitude))
     }
     
-    private func checkLocationPermision(state: WALocationPermisionState) {
+    private func checkLocationPermission(state: WALocationPermissionState) {
         switch state {
         case .whenInUse, .always:
-            print("1111111")
-            g_LoadingActivityIndicatorView.startAnimating()
-            g_LoadingProgressDescriptionView.text = "Fetching location..."
-            g_AppState = .locationUpdating
-            WALocationManager.shared.requestLocation()
+            g_CurrentLocationPermission = .whenInUse
+            requestLocationUpdate()
         default:
             if (WAUserDefaultManager.shared.isAppFirstTime) {
-                WALocationManager.shared.requestLocationPermision()
-                WAUserDefaultManager.shared.isAppFirstTime = false
+                g_CurrentLocationPermission = .denied
+                requestLocationPermission()
             } else {
+                g_CurrentLocationPermission = .denied
                 g_LoadingProgressDescriptionView.text = "Cannot fetch location info!"
                 showLocationPermissionAlert()
             }
@@ -97,6 +96,7 @@ public class WAMainViewController: UIViewController {
     
     //---- Weather Methods
     private func updateCurrentWeather(weather: WAWeather) {
+        g_CurrentAppState = .weatherDidUpdate
         g_CurrentWeatherConditionView.text = weather.weather[0].description.capitalized
         g_LocationNameView.text = weather.name
         g_TemperatureValueView.text = "\(Int(weather.main.temp))℃"
@@ -104,30 +104,44 @@ public class WAMainViewController: UIViewController {
         
         g_LoadingActivityIndicatorView.stopAnimating()
         g_DataLoadingActivityView.isHidden = true
-        
-        g_AppState = .weatherDidUpdate
     }
     
     private func weatherUpdateFailedForCurrentLocation() {
-        g_AppState = .locationDidUpdate
+        g_CurrentAppState = .none
     }
     
     //---- Network Methods
     private func updateNetworkStatus(status: WANetworkState) {
         if (status == .available) {
-            if (g_AppState != .none && g_AppState != .weatherDidUpdate) {
-                g_LoadingActivityIndicatorView.startAnimating()
-                g_LoadingProgressDescriptionView.text = "Fetching location..."
-                g_AppState = .locationUpdating
-                print("22222222")
-                WALocationManager.shared.requestLocation()
-            }
+            g_CurrentNetworkState = .available
+            requestLocationUpdate()
         } else {
-            g_LoadingActivityIndicatorView.stopAnimating()
-            g_LoadingProgressDescriptionView.text = "Turn on your internet connection!"
-            g_AppState = .none
-            
+            g_CurrentNetworkState = .unavailable
+            if (g_CurrentAppState == .none) {
+                g_DataLoadingActivityView.isHidden = false
+                g_LoadingActivityIndicatorView.stopAnimating()
+                g_LoadingProgressDescriptionView.text = "Turn on your internet connection!"
+            }
         }
+    }
+    
+    //---- Other
+    private func requestLocationUpdate() {
+        if (g_CurrentLocationPermission == .whenInUse && g_CurrentNetworkState == .available) {
+            g_DataLoadingActivityView.isHidden = false
+            g_LoadingActivityIndicatorView.startAnimating()
+            g_LoadingProgressDescriptionView.text = "Fetching location..."
+            WALocationManager.shared.requestLocation()
+        }
+    }
+    
+    private func requestLocationPermission() {
+        WALocationManager.shared.requestLocationPermission()
+        WAUserDefaultManager.shared.isAppFirstTime = false
+    }
+    
+    private func internetConnectionRestored() {
+        requestLocationUpdate()
     }
     
     //---- MARK: UI Components
@@ -252,8 +266,8 @@ extension WAMainViewController: WALocationManagerDelegate {
         updateCurrentLocation(location: newLocation)
     }
     
-    public func locationPermisionChanged(state: WALocationPermisionState) {
-        checkLocationPermision(state: state)
+    public func locationPermissionChanged(state: WALocationPermissionState) {
+        checkLocationPermission(state: state)
     }
 }
 

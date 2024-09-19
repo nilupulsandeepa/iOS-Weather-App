@@ -34,11 +34,11 @@ public class WALocationManager: NSObject {
         g_LocationManager.requestLocation()
     }
     
-    public func requestLocationPermision() {
+    public func requestLocationPermission() {
         g_LocationManager.requestWhenInUseAuthorization()
     }
     
-    public func getCurrentLocationPermision() -> WALocationPermisionState {
+    public func getCurrentLocationPermission() -> WALocationPermissionState {
         switch g_LocationManager.authorizationStatus {
         case .authorizedWhenInUse:
             return .whenInUse
@@ -60,17 +60,17 @@ public class WALocationManager: NSObject {
         }
     }
     
-    private func locationPermisionDidChanged(authorizationState: CLAuthorizationStatus) {
+    private func locationPermissionDidChanged(authorizationState: CLAuthorizationStatus) {
         if (delegate != nil) {
             switch authorizationState {
             case .authorizedWhenInUse:
-                delegate?.locationPermisionChanged(state: .whenInUse)
+                delegate?.locationPermissionChanged(state: .whenInUse)
             case .authorizedAlways:
-                delegate?.locationPermisionChanged(state: .always)
+                delegate?.locationPermissionChanged(state: .always)
             case .denied, .restricted:
-                delegate?.locationPermisionChanged(state: .denied)
+                delegate?.locationPermissionChanged(state: .denied)
             default:
-                delegate?.locationPermisionChanged(state: .denied)
+                delegate?.locationPermissionChanged(state: .denied)
                 break
             }
         }
@@ -85,7 +85,7 @@ extension WALocationManager: CLLocationManagerDelegate {
     }
     
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        locationPermisionDidChanged(authorizationState: manager.authorizationStatus)
+        locationPermissionDidChanged(authorizationState: manager.authorizationStatus)
     }
     
     public func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
@@ -97,5 +97,5 @@ extension WALocationManager: CLLocationManagerDelegate {
 //---- MARK: Location Manager Protocol
 public protocol WALocationManagerDelegate {
     func currentLocationChanged(newLocation: WALocation)
-    func locationPermisionChanged(state: WALocationPermisionState)
+    func locationPermissionChanged(state: WALocationPermissionState)
 }

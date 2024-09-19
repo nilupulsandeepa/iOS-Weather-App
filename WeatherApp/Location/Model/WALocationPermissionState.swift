@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum WALocationPermisionState {
+public enum WALocationPermissionState {
     case always
     case whenInUse
     case denied
